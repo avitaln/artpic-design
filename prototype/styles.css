@@ -71,10 +71,10 @@ p { margin:0; }
   .hero-bg { position:absolute; inset:0; }
   .hero-bg img { height:100%; max-height:none; object-position:35% 45%; }
   /* RTL: text sits on the right, so only the right side fades */
-  .hero-bg::after { background:linear-gradient(to left, rgb(255 255 255 / .93) 0%, rgb(255 255 255 / .86) 34%, rgb(255 255 255 / 0) 56%); }
+  .hero-bg::after { background:linear-gradient(to left, rgb(255 255 255 / .93) 0%, rgb(255 255 255 / .86) 30%, rgb(255 255 255 / 0) 46%); }
   .hero-copy { margin-top:0; padding-block:72px; width:100%; }
-  .hero-text { max-width:520px; }
-  .hero h1 { font-size:52px; }
+  .hero-text { max-width:460px; }
+  .hero h1 { font-size:46px; }
   .hero .ctas { flex-direction:row; }
 }
 .section { padding:48px 0; }
