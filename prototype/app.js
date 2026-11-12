@@ -32,8 +32,7 @@ const state = {
   photo: null,
   material: 'canvas', shape: 'rect', orient: 'land', sizeKey: '60-40',
   scene: 'sofa', view: 'wall',
-  frame: { type: 'none', color: 'black', wrap: 'noituf' },
-  spacer: 'silver', stand: false,
+  opt: { canvas: 'noituf', glass: 'spacersilver', perspex: 'nisteret' },
   cart: [], sheet: null, toast: '',
   wall: { id: 'trio', vi: 1, photos: [], target: -1, frame: 'none', color: 'black', premium: false },
 };
@@ -81,8 +80,9 @@ function quality(photo, w, h) {
 /* ---------- pricing ---------- */
 const FRAME_RATE = { frame: 30, float: 55 }; // ₪ per metre of perimeter, on list price (artpic-private duplicate-product.ts)
 function finishExtra(m, s) {
-  if ((m.id === 'canvas' || m.id === 'pcanvas') && state.frame.type !== 'none') {
-    const list = 2 * (s.w + s.h) / 100 * FRAME_RATE[state.frame.type];
+  const o = curOpt();
+  if (o && o.rate) {
+    const list = 2 * (s.w + s.h) / 100 * FRAME_RATE[o.rate];
     return { list, sale: list * s.sale / s.list };
   }
   return { list: 0, sale: 0 };
@@ -92,17 +92,51 @@ function priceNow() { const m = curMat(), s = curSize(), x = finishExtra(m, s); 
 const FRAME_COLORS = { black: ['שחורה', '#1d1d1d'], white: ['לבנה', '#f3f2ee'], silver: ['כסופה', '#b9bcc0'], gold: ['מוזהבת', '#b8954a'], wood: ['דמוי עץ', '#9a6b43'] };
 const FLOAT_COLORS = ['black', 'white', 'gold', 'wood'];
 const SPACERS = { silver: ['כסוף', '#c7c9cc'], black: ['שחור', '#1d1d1d'], gold: ['מוזהב', '#c4a25a'] };
-function finishLabel() {
-  const m = curMat();
-  if (m.id === 'canvas' || m.id === 'pcanvas') {
-    const f = state.frame;
-    if (f.type === 'none') return f.wrap === 'itufmale' ? 'ללא מסגרת · עיטוף מלא' : 'ללא מסגרת';
-    return `${f.type === 'float' ? 'מסגרת צפה' : 'מסגרת'} ${FRAME_COLORS[f.color][0]}`;
+
+/* Finish options. Codes (v) and full labels are the ones production reads today
+   (artpic-private product-page/constants.ts). paid = costs extra, price still to confirm. */
+const opt = (v, label, short, extra = {}) => ({ v, label, short, img: `img/opt/${v}.jpg`, ...extra });
+const CANVAS_GROUPS = [
+  { title: 'ללא מסגרת', items: [
+    opt('noituf', 'ללא מסגרת - ללא עיטוף', 'צדדים לבנים', { draw: { frame: { type: 'none' } } }),
+    opt('itufmale', 'ללא מסגרת - עיטוף מלא', 'עיטוף מלא', { draw: { frame: { type: 'none' } } }) ] },
+  { title: 'מסגרת רגילה', rate: 'frame', items: Object.keys(FRAME_COLORS).map(c =>
+    opt('frame' + c, 'מסגרת ' + FRAME_COLORS[c][0], FRAME_COLORS[c][0], { rate: 'frame', draw: { frame: { type: 'frame', color: c } } })) },
+  { title: 'מסגרת צפה', rate: 'float', items: FLOAT_COLORS.map(c =>
+    opt('float' + c, 'מסגרת צפה ' + FRAME_COLORS[c][0], FRAME_COLORS[c][0], { rate: 'float', draw: { frame: { type: 'float', color: c } } })) },
+];
+const spacerItems = () => Object.keys(SPACERS).map(c =>
+  opt('spacer' + c, 'ספייסר ' + SPACERS[c][0], SPACERS[c][0], { paid: c !== 'silver', draw: { spacer: c } }));
+const STAND = opt('stand', 'מעמד', 'מעמד שולחני', { draw: {} });
+const PERSPEX_FRAMES = Object.keys(FRAME_COLORS).map(c =>
+  opt('pframe' + c, 'מסגרת ' + FRAME_COLORS[c][0], FRAME_COLORS[c][0], { code: 'frame' + c, paid: true, draw: { frame: { type: 'frame', color: c } } }));
+
+// Which options a size gets follows getMaterialOptions() in artpic-private.
+function optGroups(m, s) {
+  const big = Math.max(s.w, s.h), small = Math.min(s.w, s.h);
+  const tiny = big <= 21 && small <= 20, is3020 = big === 30 && small === 20;
+  if (m.id === 'canvas' || m.id === 'pcanvas') return CANVAS_GROUPS;
+  if (m.id === 'glass') {
+    if (tiny && !(big === 21 && small === 15)) return [];
+    const stand = tiny || is3020;
+    return [{ title: stand ? 'מעמד או ספייסרים' : 'ספייסרים לתלייה', items: [...(stand ? [STAND] : []), ...spacerItems()] }];
   }
-  if (m.id === 'glass') return `ספייסר ${SPACERS[state.spacer][0]}${state.stand ? ' · מעמד' : ''}`;
-  if (m.id === 'perspex') return 'תלייה נסתרת';
-  return '';
+  if (m.id === 'perspex') {
+    if (tiny) return [];
+    return [
+      { title: 'תלייה', items: [...(is3020 ? [STAND] : []),
+        { ...opt('nisteret', 'תלייה נסתרת', 'תלייה נסתרת', { draw: {} }), img: 'img/mat-perspex.jpg' }, ...spacerItems()] },
+      { title: 'מסגרת', items: PERSPEX_FRAMES },
+    ];
+  }
+  return [];
 }
+const optKey = m => m.id === 'pcanvas' ? 'canvas' : m.id;
+function curOpt() {
+  const m = curMat(), items = optGroups(m, curSize()).flatMap(g => g.items);
+  return items.find(i => i.v === state.opt[optKey(m)]) || items[0] || null;
+}
+function finishLabel() { const o = curOpt(); return o ? o.label : ''; }
 
 /* ---------- SVG drawing (all units are cm) ---------- */
 const FLOOR = 12;
@@ -128,8 +162,8 @@ function printSVG(p) {
   const img = `<image href="${p.photo.url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${p.align || 'xMidYMid'} slice"/>`;
   let out = '';
   const f = p.frame || { type: 'none' };
-  if ((p.mat === 'canvas' || p.mat === 'pcanvas') && f.type === 'frame') {
-    const t = Math.max(2.2, Math.min(w, h) * .045);
+  if ((p.mat === 'canvas' || p.mat === 'pcanvas' || p.mat === 'perspex') && f.type === 'frame') {
+    const t = p.mat === 'perspex' ? Math.max(1.2, Math.min(w, h) * .025) : Math.max(2.2, Math.min(w, h) * .045);
     out += `<rect x="${x - t}" y="${y - t}" width="${w + 2 * t}" height="${h + 2 * t}" fill="${FRAME_COLORS[f.color][1]}" filter="url(#sh)"/>`;
   } else if ((p.mat === 'canvas' || p.mat === 'pcanvas') && f.type === 'float') {
     const g = 1.2, t = 1.6;
@@ -144,8 +178,8 @@ function printSVG(p) {
     out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#gloss)"/>`;
     out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#e8f3f1" stroke-opacity=".9" stroke-width="${p.mat === 'glass' ? .5 : .3}"/>`;
   }
-  if (p.mat === 'glass' && w >= 30) {
-    const r = Math.max(.8, Math.min(w, h) * .018), i = r * 2.4, col = SPACERS[p.spacer || 'silver'][1];
+  if ((p.mat === 'glass' || p.mat === 'perspex') && p.spacer) {
+    const r = Math.max(.8, Math.min(w, h) * .018), i = r * 2.4, col = SPACERS[p.spacer][1];
     [[x + i, y + i], [x + w - i, y + i], [x + i, y + h - i], [x + w - i, y + h - i]].forEach(([a, b]) => { out += `<circle cx="${a}" cy="${b}" r="${r}" fill="${col}" stroke="#000" stroke-opacity=".25" stroke-width=".15"/>`; });
   }
   if (p.mat === 'story') {
@@ -370,7 +404,7 @@ function updateStudio(scrollSel) {
   try { history.replaceState(null, '', `#p-${m.id}-${s.key}`); } catch {}
   $('#crumbs').innerHTML = `<a href="#home">ראשי</a> › <a href="#m-${m.id}">${m.name}</a> › <span class="num">${D(s.w, s.h)}</span>`;
 
-  const item = { x: 0, y: 0, w: dw, h: dh, mat: m.id, photo: ph, frame: state.frame, spacer: state.spacer };
+  const item = { x: 0, y: 0, w: dw, h: dh, mat: m.id, photo: ph, ...(curOpt()?.draw || {}) };
   const scenes = m.standing ? ['desk'] : ['sofa', 'bed', 'kitchen'];
   $('#stage').innerHTML = (state.view === 'wall' ? roomSVG(state.scene, [item], { label: `${D(dw, dh)} ס״מ` }) : closeupSVG(item)) +
     `<div class="stage-tools"><div class="seg" role="group" aria-label="חדר">${scenes.map(sc => `<button data-act="scene" data-v="${sc}" aria-pressed="${state.view === 'wall' && state.scene === sc}">${SCENES[sc].label}</button>`).join('')}</div>
@@ -417,24 +451,17 @@ function updateStudio(scrollSel) {
 }
 
 function finishHTML(m, s) {
-  if (m.id === 'canvas' || m.id === 'pcanvas') {
-    const f = state.frame, ex = t => { const l = 2 * (s.w + s.h) / 100 * FRAME_RATE[t]; return money(Math.round(l * s.sale / s.list * 100) / 100); };
-    const colors = f.type === 'frame' ? Object.keys(FRAME_COLORS) : f.type === 'float' ? FLOAT_COLORS : null;
-    return `<div class="field"><h2>גימור</h2><div class="chips">
-      <button class="chip" data-act="ftype" data-v="none" aria-pressed="${f.type === 'none'}">ללא מסגרת</button>
-      <button class="chip" data-act="ftype" data-v="frame" aria-pressed="${f.type === 'frame'}">מסגרת <small class="num">+${ex('frame')}</small></button>
-      <button class="chip" data-act="ftype" data-v="float" aria-pressed="${f.type === 'float'}">מסגרת צפה <small class="num">+${ex('float')}</small></button></div>
-      ${colors ? `<div class="swatches" role="group" aria-label="צבע מסגרת">${colors.map(c => `<button class="sw" data-act="fcolor" data-v="${c}" aria-pressed="${f.color === c}" aria-label="${FRAME_COLORS[c][0]}" title="${FRAME_COLORS[c][0]}"><i style="background:${FRAME_COLORS[c][1]}"></i></button>`).join('')}</div>`
-        : `<div class="chips" style="margin-top:10px"><button class="chip" data-act="wrap" data-v="noituf" aria-pressed="${f.wrap === 'noituf'}">צדדים לבנים</button><button class="chip" data-act="wrap" data-v="itufmale" aria-pressed="${f.wrap === 'itufmale'}">עיטוף מלא</button></div>`}
-      ${m.id === 'canvas' ? `<p class="hint">רוצים מראה של ציור שמן? <button class="btn-quiet btn" style="min-height:0;padding:0" data-act="mat" data-v="pcanvas">שדרוג לקנבס פרימיום</button></p>` : ''}</div>`;
-  }
-  if (m.id === 'glass') {
-    const small = Math.max(s.w, s.h) <= 30;
-    return `<div class="field"><h2>ספייסרים לתלייה <span>כלולים במחיר</span></h2><div class="swatches">${Object.keys(SPACERS).map(c => `<button class="sw" data-act="spacer" data-v="${c}" aria-pressed="${state.spacer === c}" aria-label="${SPACERS[c][0]}" title="${SPACERS[c][0]}"><i style="background:${SPACERS[c][1]}"></i></button>`).join('')}</div>
-      ${small ? `<div class="chips" style="margin-top:10px"><button class="chip" data-act="stand" aria-pressed="${state.stand}">עם מעמד שולחני</button></div>` : ''}<p class="hint">[מחיר ספייסר צבעוני: לאמת מול המחירון]</p></div>`;
-  }
-  if (m.id === 'perspex') return `<div class="field"><h2>תלייה</h2><p class="hint" style="margin:0">תלייה נסתרת מאחורי הלוח, כלולה במחיר.</p></div>`;
-  return `<div class="field"><h2>הצבה</h2><p class="hint" style="margin:0">הבלוק עומד לבד על מדף או שידה. לא צריך לתלות.</p></div>`;
+  const groups = optGroups(m, s), cur = curOpt();
+  if (!groups.length) return m.id === 'story'
+    ? `<div class="field"><h2>הצבה</h2><p class="hint" style="margin:0">הבלוק עומד לבד על מדף או שידה. לא צריך לתלות.</p></div>`
+    : `<div class="field"><h2>גימור</h2><p class="hint" style="margin:0">בגודל הזה אין אפשרויות נוספות.</p></div>`;
+  const extra = rate => money(Math.round(2 * (s.w + s.h) / 100 * FRAME_RATE[rate] * s.sale / s.list * 100) / 100);
+  const tag = i => i.rate ? '+' + extra(i.rate) : i.paid ? 'בתוספת' : 'כלול';
+  return groups.map((g, gi) => `<div class="field"><h2>${g.title}${g.rate ? ` <span class="num">+${extra(g.rate)}</span>` : ''}</h2>
+    <div class="rail" data-rail="opt-${gi}">${g.items.map(i => `<button class="opt" data-act="opt" data-v="${i.v}" aria-pressed="${cur && cur.v === i.v}">
+      <img src="${i.img}" alt="" loading="lazy" width="180" height="180"><b>${i.short}</b><span class="num">${g.rate ? '' : tag(i)}</span></button>`).join('')}</div></div>`).join('')
+    + (m.id === 'canvas' ? `<p class="hint">רוצים מראה של ציור שמן? <button class="btn-quiet btn" style="min-height:0;padding:0" data-act="mat" data-v="pcanvas">שדרוג לקנבס פרימיום</button></p>` : '')
+    + (groups.some(g => g.items.some(i => i.paid)) ? `<p class="hint">[מחירי ספייסר צבעוני ומסגרת לאקריליק: לאמת מול המחירון]</p>` : '');
 }
 
 /* ---------- canvas walls ---------- */
@@ -607,11 +634,7 @@ document.addEventListener('click', e => {
     case 'shape': selectShape(v); refresh(true); return;
     case 'orient': state.orient = v; break;
     case 'size': state.sizeKey = v; break;
-    case 'ftype': state.frame.type = v; if (v === 'float' && !FLOAT_COLORS.includes(state.frame.color)) state.frame.color = 'black'; break;
-    case 'fcolor': state.frame.color = v; break;
-    case 'wrap': state.frame.wrap = v; break;
-    case 'spacer': state.spacer = v; break;
-    case 'stand': state.stand = !state.stand; break;
+    case 'opt': state.opt[optKey(curMat())] = v; break;
     case 'add': {
       const m = curMat(), s = curSize(), [a, b] = dims(s), pr = priceNow();
       state.cart.push({ title: `${m.name} ${D(a, b)}`, finish: finishLabel(), price: Math.round(pr.sale * 100) / 100, thumb: photo().url, slug: s.slug });
