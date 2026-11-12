@@ -264,7 +264,6 @@ function uploadBtn(label = 'העלו תמונה והתחילו', cls = 'btn btn-
 
 function viewHome() {
   const ph = photo();
-  const heroItem = [{ x: 0, y: 0, w: 100, h: 70, mat: 'canvas', photo: ph, frame: { type: 'none' } }];
   return `${header()}<main>
   <section class="hero"><div class="wrap">
     <div style="display:grid;gap:16px">
@@ -273,7 +272,11 @@ function viewHome() {
       <div class="ctas">${uploadBtn()}<a class="btn btn-secondary" href="#studio">איך זה נראה? נסו עם תמונה לדוגמה</a></div>
       <div class="reassure"><span>בדיקת איכות לכל תמונה</span><span>משלוח חינם מעל ${C.freeShippingFrom} ₪</span><span>${C.promo}</span></div>
     </div>
-    <div class="hero-stage">${roomSVG('sofa', heroItem, { label: 'קנבס 100×70 ס״מ' })}</div>
+    <figure class="hero-photo"><div class="hero-frame" id="heroFrame">
+        <img class="room" src="img/room-sunlit.webp" alt="הדפסה ממוסגרת בחדר מואר" width="2000" height="1600" fetchpriority="high">
+        ${ph.sample ? '' : `<div class="hero-print" id="heroPrint"><img src="${ph.url}" alt="התמונה שלכם"></div>`}
+      </div>
+      <figcaption>${ph.sample ? 'הדפסה במסגרת מוזהבת, \u206670×100\u2069 ס״מ' : 'כך התמונה שלכם תיראה במסגרת מוזהבת. <a href="#studio">לבחירת גודל וחומר</a>'}</figcaption></figure>
   </div></section>
 
   <section class="section" id="materials"><div class="wrap">
@@ -540,13 +543,13 @@ function render() {
     if (state.wall.id !== b) { state.wall.id = b; state.wall.vi = defaultVi(C.walls.find(x => x.id === b) || C.walls[0]); }
     app.innerHTML = viewWall(); route = 'wall'; updateWall(); window.scrollTo(0, 0);
   } else if (a === 'walls') { app.innerHTML = viewWallList(); route = 'walls'; window.scrollTo(0, 0); document.title = 'קיר תמונות קנבס | ArtPic'; }
-  else { app.innerHTML = viewHome(); route = 'home'; window.scrollTo(0, 0); document.title = 'הדפסת תמונות על קנבס וזכוכית | ArtPic'; }
+  else { app.innerHTML = viewHome(); route = 'home'; window.scrollTo(0, 0); requestAnimationFrame(placeHero); document.title = 'הדפסת תמונות על קנבס וזכוכית | ArtPic'; }
   renderSheet();
 }
 function refresh(scrollSel) {
   if (route === 'studio') { $('header.header')?.replaceWith(htmlEl(header()).querySelector('header')); updateStudio(scrollSel); }
   else if (route === 'wall') { $('header.header')?.replaceWith(htmlEl(header()).querySelector('header')); updateWall(); }
-  else { const y = scrollY; const r = route; route = ''; render(); route = r; scrollTo(0, y); }
+  else { const y = scrollY; const r = route; route = ''; render(); route = r; scrollTo(0, y); requestAnimationFrame(placeHero); }
   renderSheet();
 }
 const htmlEl = html => { const d = document.createElement('div'); d.innerHTML = html; return d; };
@@ -629,6 +632,33 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.sheet) { state.sheet = null; renderSheet(); } });
 
+/* ---------- hero: the buyer's photo placed into the room photo's frame ---------- */
+// Inner corners of the frame in the 2000×1600 room photo: top-left, top-right, bottom-right, bottom-left.
+const HERO_QUAD = [[881, 538], [1526, 535], [1502, 1451], [879, 1407]];
+function homography(w, h, dst) {
+  const src = [[0, 0], [w, 0], [w, h], [0, h]], A = [], B = [];
+  src.forEach(([x, y], i) => { const [u, v] = dst[i];
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); B.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); B.push(v); });
+  for (let c = 0; c < 8; c++) {           // Gaussian elimination
+    let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    [A[c], A[p]] = [A[p], A[c]]; [B[c], B[p]] = [B[p], B[c]];
+    for (let r = 0; r < 8; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let k = c; k < 8; k++) A[r][k] -= f * A[c][k]; B[r] -= f * B[c]; }
+  }
+  const [a1, b1, c1, d1, e1, f1, g1, h1] = B.map((b, i) => b / A[i][i]);
+  return `matrix3d(${[a1, d1, 0, g1, b1, e1, 0, h1, 0, 0, 1, 0, c1, f1, 0, 1].join(',')})`;
+}
+function placeHero() {
+  const frame = $('#heroFrame'), print = $('#heroPrint'); if (!frame || !print) return;
+  const img = frame.querySelector('img.room'), cw = frame.clientWidth, ch = frame.clientHeight;
+  const s = Math.max(cw / 2000, ch / 1600);
+  const pos = getComputedStyle(img).objectPosition.split(' ').map(v => parseFloat(v) / 100);
+  const ox = (cw - 2000 * s) * pos[0], oy = (ch - 1600 * s) * pos[1];
+  const dst = HERO_QUAD.map(([x, y]) => [x * s + ox, y * s + oy]);
+  print.style.width = '700px'; print.style.height = '1000px';
+  print.style.transform = homography(700, 1000, dst);
+}
+window.addEventListener('resize', placeHero);
 window.addEventListener('hashchange', render);
 render();
 })();
