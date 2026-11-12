@@ -498,6 +498,7 @@ function updateWall() {
   const w = state.wall, L = C.walls.find(x => x.id === w.id); if (!L) return;
   if (w.vi >= L.variants.length) w.vi = defaultVi(L);
   const v = L.variants[w.vi], n = v.slots.length, filled = Math.min(w.photos.filter(Boolean).length, n);
+  try { history.replaceState(null, '', `#wall-${v.slug.replace('canvaswall-', '')}${w.premium ? '-premium' : ''}`); } catch {}
   const sample = photo().sample ? photo() : makeSampleCached();
   const usingSamples = w.photos.filter(Boolean).length === 0;
   const items = v.slots.map((s, i) => {
@@ -568,8 +569,15 @@ function render() {
     app.innerHTML = viewStudio(); route = 'studio'; updateStudio(true); window.scrollTo(0, 0);
   } else if (a === 'm') { app.innerHTML = viewCategory(b); route = 'cat'; window.scrollTo(0, 0); document.title = `הדפסה על ${MAT(b)?.name || ''} | ArtPic`; }
   else if (a === 'wall') {
-    if (state.wall.id !== b) { state.wall.id = b; state.wall.vi = defaultVi(C.walls.find(x => x.id === b) || C.walls[0]); }
-    app.innerHTML = viewWall(); route = 'wall'; updateWall(); window.scrollTo(0, 0);
+    // b is the product slug without "canvaswall-" (e.g. grid-3x2), "-premium" for premium canvas, or a bare layout id
+    const premium = b.endsWith('-premium'), key = premium ? b.slice(0, -8) : b;
+    let L = C.walls.find(x => x.variants.some(v => v.slug === 'canvaswall-' + key)), vi;
+    if (L) vi = L.variants.findIndex(v => v.slug === 'canvaswall-' + key);
+    else { L = C.walls.find(x => x.id === key) || C.walls[0]; vi = state.wall.id === L.id ? state.wall.vi : defaultVi(L); }
+    const same = route === 'wall';
+    Object.assign(state.wall, { id: L.id, vi, premium });
+    if (!same) { app.innerHTML = viewWall(); route = 'wall'; window.scrollTo(0, 0); }
+    updateWall();
   } else if (a === 'walls') { app.innerHTML = viewWallList(); route = 'walls'; window.scrollTo(0, 0); document.title = 'קיר תמונות קנבס | ArtPic'; }
   else { app.innerHTML = viewHome(); route = 'home'; window.scrollTo(0, 0); document.title = 'הדפסת תמונות על קנבס וזכוכית | ArtPic'; }
   renderSheet();
