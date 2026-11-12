@@ -265,18 +265,18 @@ function uploadBtn(label = 'העלו תמונה והתחילו', cls = 'btn btn-
 function viewHome() {
   const ph = photo();
   return `${header()}<main>
-  <section class="hero"><div class="wrap">
-    <div style="display:grid;gap:16px">
+  <section class="hero">
+    <picture class="hero-bg">
+      <source media="(min-width:900px)" srcset="img/gallery-wall-wide.jpg">
+      <img src="img/gallery-wall.jpg" alt="קיר בסלון עם הדפסות קנבס של תמונות משפחתיות והדפסת זכוכית אחת" fetchpriority="high">
+    </picture>
+    <div class="wrap hero-copy"><div class="hero-text">
       <h1>התמונות שלכם, בגודל אמיתי, על הקיר שלכם.</h1>
       <p class="lead">מעלים תמונה, רואים אותה בסלון בקנה מידה אמיתי, ובוחרים חומר וגודל במסך אחד.</p>
       <div class="ctas">${uploadBtn()}<a class="btn btn-secondary" href="#studio">איך זה נראה? נסו עם תמונה לדוגמה</a></div>
       <div class="reassure"><span>בדיקת איכות לכל תמונה</span><span>משלוח חינם מעל ${C.freeShippingFrom} ₪</span><span>${C.promo}</span></div>
-    </div>
-    <figure class="hero-photo">
-      <img src="img/gallery-wall.jpg" alt="קיר בסלון עם שש הדפסות קנבס של תמונות משפחתיות והדפסת זכוכית אחת" width="1047" height="1300" fetchpriority="high">
-      <figcaption>קנבס במגוון גדלים, והדפסת זכוכית עם ספייסרים (מימין). תמונה להמחשה.</figcaption>
-    </figure>
-  </div></section>
+    </div></div>
+  </section>
 
   <section class="section" id="materials"><div class="wrap">
     <div class="section-head"><div><h2>על מה להדפיס?</h2><p>${ph.sample ? 'כך תיראה תמונה על כל חומר.' : 'כך תיראה התמונה שלכם על כל חומר.'}</p></div></div>
