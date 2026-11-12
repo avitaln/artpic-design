@@ -11,7 +11,7 @@
   --font-display:'Heebo', sans-serif; --font-body:'Heebo', sans-serif;
   --display-weight:300; --display-tracking:-0.03em;
   /* shape */
-  --r-s:0; --r-m:2px; --r-l:4px; --r-btn:0;
+  --r-s:0; --r-m:2px; --r-l:4px; --r-btn:6px;
   --shadow-1:none; --shadow-2:0 -1px 0 #E4E4E1;
   --card-border:1px solid #E4E4E1;
 }
@@ -141,7 +141,7 @@ html, body { overflow-x:clip; }
 .stage-tools { display:flex; justify-content:space-between; gap:8px; padding:8px 12px 10px; }
 .stage-tools > * { pointer-events:auto; }
 .seg { display:inline-flex; background:var(--surface); border-radius:var(--r-btn); padding:3px; gap:2px; box-shadow:var(--shadow-1); border:var(--card-border); }
-.seg button { border:0; background:transparent; min-height:38px; padding:0 12px; border-radius:var(--r-btn); cursor:pointer; font-size:14px; font-weight:500; white-space:nowrap; }
+.seg button { border:0; background:transparent; min-height:38px; padding:0 12px; border-radius:calc(var(--r-btn) - 3px); cursor:pointer; font-size:14px; font-weight:500; white-space:nowrap; }
 .seg button[aria-pressed="true"] { background:var(--primary); color:var(--on-primary); }
 .panel { padding:16px 0 140px; display:grid; gap:22px; }
 .prod-head h1 { font-size:24px; line-height:1.2; }
@@ -166,7 +166,7 @@ html, body { overflow-x:clip; }
 .mat .thumb { aspect-ratio:1; border-radius:var(--r-s); overflow:hidden; background:var(--wall); margin-bottom:6px; }
 .mat b { display:block; font-size:15px; line-height:1.25; }
 .mat span { font-size:13px; color:var(--muted); }
-.size { flex:0 0 auto; min-width:84px; scroll-snap-align:start; background:var(--surface); border:2px solid var(--border); border-radius:var(--r-m); padding:10px 10px 8px; cursor:pointer; display:grid; justify-items:center; gap:4px; position:relative; }
+.size { flex:0 0 auto; min-width:84px; scroll-snap-align:start; background:var(--surface); border:2px solid var(--border); border-radius:var(--r-btn); padding:10px 10px 8px; cursor:pointer; display:grid; justify-items:center; gap:4px; position:relative; }
 .size[aria-pressed="true"] { border-color:var(--primary); background:color-mix(in srgb, var(--primary) 7%, var(--surface)); }
 .size .box { height:40px; display:flex; align-items:end; justify-content:center; }
 .size .box i { display:block; background:var(--surface-2); border:1.5px solid var(--text); border-radius:1px; }

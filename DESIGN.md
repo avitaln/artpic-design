@@ -58,7 +58,7 @@ The studio screen is one column on mobile, with the room stage sticky at the top
 
 ## Shape and depth
 
-- Radius: `--r-s` 0, `--r-m` 2px, `--r-l` 4px, buttons 0. Square corners, like a printed frame.
+- Radius: `--r-s` 0, `--r-m` 2px, `--r-l` 4px for prints, photos and the cards that show them: square, like a printed frame. `--r-btn` 6px for everything you tap (buttons, chips, segmented controls, size chips), so it reads as tappable and a little warmer. Never pill-shaped.
 - No shadows on UI. Separation comes from a 1px `--border` line. The only `--shadow-2` is a 1px line above the sticky buy bar.
 - Shadows appear only inside room scenes, under the prints, to show depth on the wall.
 
@@ -84,4 +84,4 @@ The studio screen is one column on mobile, with the room stage sticky at the top
 
 ## Not allowed
 
-Rounded pill buttons, drop shadows on cards, gradients, glassmorphism, colored headings, brass used as text, carousels for primary content, three identical feature cards, and any AI-illustration upsell.
+Pill-shaped buttons, drop shadows on cards, gradients, glassmorphism, colored headings, brass used as text, carousels for primary content, three identical feature cards, and any AI-illustration upsell.
