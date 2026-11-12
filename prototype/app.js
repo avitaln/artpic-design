@@ -233,6 +233,9 @@ function closeupSVG(p) {
   return `<svg viewBox="0 0 ${Wf} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="תקריב">${defs()}<rect width="${Wf}" height="${H}" fill="var(--wall)"/>${printSVG({ ...p, x, y })}</svg>`;
 }
 
+// Real close-up photo of each material (edge, surface, fixings), so canvas and glass look different.
+const matPhoto = m => `<img src="img/mat-${m.id}.jpg" alt="${m.name}, צילום מקרוב" loading="lazy" width="600" height="600">`;
+
 function matThumb(mid, photo) {
   const st = mid === 'story';
   const p = st ? { x: 30, y: 40, w: 36, h: 36 * 2 / 3 } : { x: 18, y: 24, w: 64, h: 64 * 2 / 3 };
@@ -281,7 +284,7 @@ function viewHome() {
   <section class="section" id="materials"><div class="wrap">
     <div class="section-head"><div><h2>על מה להדפיס?</h2><p>${ph.sample ? 'כך תיראה תמונה על כל חומר.' : 'כך תיראה התמונה שלכם על כל חומר.'}</p></div></div>
     <div class="mat-list">
-      ${C.materials.map(m => `<a class="mat-row" href="#m-${m.id}"><div class="thumb">${matThumb(m.id, ph)}</div><div><h3>${m.name}</h3><p>${m.note}</p><div class="from num">החל מ־<b>${money(fromPrice(m))}</b></div></div></a>`).join('')}
+      ${C.materials.map(m => `<a class="mat-row" href="#m-${m.id}"><div class="thumb">${matPhoto(m)}</div><div><h3>${m.name}</h3><p>${m.note}</p><div class="from num">החל מ־<b>${money(fromPrice(m))}</b></div></div></a>`).join('')}
       <a class="mat-row feature" href="#walls"><div class="thumb" style="background:var(--wall)">${roomSVG('sofa', expandWall('grid', 1).map((s, i) => ({ ...s, mat: 'canvas', photo: ph, align: ALIGNS[i % ALIGNS.length], frame: { type: 'frame', color: 'black' } })), { noDim: true })}</div>
         <div><h3>קיר תמונות קנבס <span class="tag">חדש</span></h3><p>14 סידורים מוכנים לסלון, למדרגות ולמסדרון. מעלים כמה תמונות ורואים את הקיר מוכן.</p><div class="from num">סט החל מ־<b>${money(Math.min(...C.walls.flatMap(w => w.variants.map(v => v.price[0]))))}</b></div></div></a>
     </div>
@@ -387,7 +390,7 @@ function updateStudio(scrollSel) {
       ${uploadBtn(ph.sample ? 'העלאה' : 'החלפה', ph.sample ? 'btn btn-primary' : 'btn btn-secondary')}</div>
 
     <div class="field"><h2>חומר</h2><div class="rail" data-rail="mat">
-      ${C.materials.map(x => `<button class="mat" data-act="mat" data-v="${x.id}" aria-pressed="${x.id === m.id}"><div class="thumb">${matThumb(x.id, ph)}</div><b>${x.name}</b><span class="num">מ־${money(fromPrice(x))}</span></button>`).join('')}
+      ${C.materials.map(x => `<button class="mat" data-act="mat" data-v="${x.id}" aria-pressed="${x.id === m.id}"><div class="thumb">${matPhoto(x)}</div><b>${x.name}</b><span class="num">מ־${money(fromPrice(x))}</span></button>`).join('')}
     </div></div>
 
     <div class="field"><h2>צורה</h2><div class="chips">
