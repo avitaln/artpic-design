@@ -383,7 +383,6 @@ function updateStudio(scrollSel) {
   const maxA = Math.max(...sizes.map(z => Math.max(z.w, z.h)));
   $('#panel').innerHTML = `
     <div class="prod-head"><h1>${title}</h1>
-      <p class="hint url">artpic.shop/product-page/${esc(s.slug)}</p>
       <div class="price-line num"><span class="now">${money(pr.sale)}</span><s>${money(pr.list)}</s><span class="off">${pr.off}% הנחה</span><span class="promo-note">${C.promo}</span></div></div>
 
     <div class="photo-row"><img src="${ph.url}" alt=""><div class="meta"><b>${esc(ph.name)}</b><span class="q ${q.k}">${ph.sample ? 'העלו תמונה כדי לבדוק איכות' : `${q.t} ב־${D(dw, dh)}`}</span></div>
