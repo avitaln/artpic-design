@@ -157,8 +157,11 @@ const defs = () => `<defs>
 function printSVG(p) {
   // p: {x,y,w,h,mat,photo,align,frame:{type,color},spacer,empty,idx}
   const { x, y, w, h } = p;
-  if (p.empty) return `<g class="slot-empty" data-slot="${p.idx}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--surface)" fill-opacity=".7" stroke="var(--text)" stroke-width=".5" stroke-dasharray="2 1.5"/>
-    <text x="${x + w / 2}" y="${y + h / 2 + Math.min(w, h) * .15}" text-anchor="middle" font-size="${Math.min(w, h) * .42}" fill="var(--text)">+</text></g>`;
+  if (p.empty) { const m = Math.min(w, h), cx = x + w / 2, cy = y + h / 2;
+    return `<g class="slot-empty" data-slot="${p.idx}" role="button" aria-label="העלאת תמונה למשבצת ${p.idx + 1}, ${w} על ${h} ס״מ">
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--surface)" fill-opacity=".75" stroke="var(--text)" stroke-width=".5" stroke-dasharray="2 1.5"/>
+    <path d="M${cx - m * .12} ${cy - m * .06}h${m * .24}M${cx} ${cy - m * .18}v${m * .24}" stroke="var(--text)" stroke-width="${Math.max(.5, m * .025)}" stroke-linecap="round"/>
+    <text x="${cx}" y="${cy + m * .26}" text-anchor="middle" font-size="${Math.max(3.6, m * .17)}" fill="var(--muted)" font-family="var(--font-body)">${D(w, h)}</text></g>`; }
   const img = `<image href="${p.photo.url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${p.align || 'xMidYMid'} slice"/>`;
   let out = '';
   const f = p.frame || { type: 'none' };
@@ -506,7 +509,6 @@ function updateWall() {
   const items = v.slots.map((s, i) => {
     const p = w.photos[i];
     if (p) return { ...s, slot: i, mat: w.premium ? 'pcanvas' : 'canvas', photo: p, frame: { type: w.frame, color: w.color } };
-    if (usingSamples) return { ...s, slot: i, badge: true, mat: w.premium ? 'pcanvas' : 'canvas', photo: sample, align: ALIGNS[i % ALIGNS.length], frame: { type: w.frame, color: w.color } };
     return { ...s, empty: true, idx: i };
   });
   const pr = wallPrice(L, v);
@@ -519,7 +521,7 @@ function updateWall() {
       <p class="hint">${L.pitch}</p></div>
     ${L.variants.length > 1 ? `<div class="field"><h2>גודל הסט</h2><div class="chips">${L.variants.map((x, i) => `<button class="chip" data-act="wvar" data-v="${i}" aria-pressed="${i === w.vi}">${x.key} <small class="num">${money(x.price[0])}</small></button>`).join('')}</div></div>` : ''}
     <div class="field"><h2>תמונות <span class="num">${filled} מתוך ${n}</span></h2>
-      <p class="hint" style="margin:0">${usingSamples ? 'לחצו על תמונה בקיר כדי להעלות תמונה משלכם. אפשר לבחור כמה תמונות בבת אחת.' : filled < n ? `חסרות עוד ${n - filled} תמונות. לחצו על משבצת ריקה בקיר.` : 'כל התמונות במקום. לחיצה על תמונה בקיר מחליפה אותה.'}</p></div>
+      <p class="hint" style="margin:0">${usingSamples ? 'לחצו על + בקיר כדי להעלות תמונה. אפשר לבחור כמה תמונות בבת אחת.' : filled < n ? `חסרות עוד ${n - filled} תמונות. לחצו על + בקיר.` : 'כל התמונות במקום. לחיצה על תמונה בקיר מחליפה אותה.'}</p></div>
     <div class="field"><h2>חומר</h2><div class="chips"><button class="chip" data-act="wprem" data-v="0" aria-pressed="${!w.premium}">קנבס</button><button class="chip" data-act="wprem" data-v="1" aria-pressed="${w.premium}">קנבס פרימיום <small>הערכה</small></button></div></div>
     <div class="field"><h2>גימור לכל הסט</h2><div class="chips">${[['none', 'ללא מסגרת'], ['frame', 'מסגרת'], ['float', 'מסגרת צפה']].map(([k, t]) => `<button class="chip" data-act="wframe" data-v="${k}" aria-pressed="${w.frame === k}">${t}</button>`).join('')}</div>
       ${w.frame !== 'none' ? `<div class="swatches">${(w.frame === 'float' ? FLOAT_COLORS : Object.keys(FRAME_COLORS)).map(c => `<button class="sw" data-act="wcolor" data-v="${c}" aria-pressed="${w.color === c}" aria-label="${FRAME_COLORS[c][0]}"><i style="background:${FRAME_COLORS[c][1]}"></i></button>`).join('')}</div>` : ''}</div>
