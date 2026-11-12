@@ -186,7 +186,9 @@ function printSVG(p) {
     const d = Math.max(1.6, w * .07);
     out += `<polygon points="${x + w},${y} ${x + w + d},${y + d * .5} ${x + w + d},${y + h} ${x + w},${y + h}" fill="#bcd6d2" fill-opacity=".85"/>`;
   }
-  return `<g>${out}</g>`;
+  if (p.badge) { const r = Math.max(2.2, Math.min(w, h) * .13), cx = x + w / 2, cy = y + h / 2;
+    out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" fill-opacity=".92" stroke="var(--ink)" stroke-opacity=".25" stroke-width=".3"/><path d="M${cx - r * .45} ${cy}h${r * .9}M${cx} ${cy - r * .45}v${r * .9}" stroke="var(--ink)" stroke-width="${r * .14}" stroke-linecap="round"/>`; }
+  return p.slot != null ? `<g class="slot" data-slot="${p.slot}" role="button" aria-label="העלאת תמונה למשבצת ${p.slot + 1}">${out}</g>` : `<g>${out}</g>`;
 }
 
 function furnitureSVG(id, cx, fy, W, g) {
@@ -503,8 +505,8 @@ function updateWall() {
   const usingSamples = w.photos.filter(Boolean).length === 0;
   const items = v.slots.map((s, i) => {
     const p = w.photos[i];
-    if (p) return { ...s, mat: w.premium ? 'pcanvas' : 'canvas', photo: p, frame: { type: w.frame, color: w.color } };
-    if (usingSamples) return { ...s, mat: w.premium ? 'pcanvas' : 'canvas', photo: sample, align: ALIGNS[i % ALIGNS.length], frame: { type: w.frame, color: w.color } };
+    if (p) return { ...s, slot: i, mat: w.premium ? 'pcanvas' : 'canvas', photo: p, frame: { type: w.frame, color: w.color } };
+    if (usingSamples) return { ...s, slot: i, badge: true, mat: w.premium ? 'pcanvas' : 'canvas', photo: sample, align: ALIGNS[i % ALIGNS.length], frame: { type: w.frame, color: w.color } };
     return { ...s, empty: true, idx: i };
   });
   const pr = wallPrice(L, v);
@@ -517,8 +519,7 @@ function updateWall() {
       <p class="hint">${L.pitch}</p></div>
     ${L.variants.length > 1 ? `<div class="field"><h2>גודל הסט</h2><div class="chips">${L.variants.map((x, i) => `<button class="chip" data-act="wvar" data-v="${i}" aria-pressed="${i === w.vi}">${x.key} <small class="num">${money(x.price[0])}</small></button>`).join('')}</div></div>` : ''}
     <div class="field"><h2>תמונות <span class="num">${filled} מתוך ${n}</span></h2>
-      <div class="photo-row"><div class="meta"><b>${usingSamples ? 'מוצגות תמונות לדוגמה' : filled < n ? `חסרות עוד ${n - filled} תמונות` : 'כל התמונות במקום'}</b><span class="q ok">לחיצה על משבצת מחליפה את התמונה שלה</span></div>
-      <button class="btn btn-primary" data-act="wupload">${usingSamples ? `העלאת ${n} תמונות` : 'הוספה'}</button></div></div>
+      <p class="hint" style="margin:0">${usingSamples ? 'לחצו על תמונה בקיר כדי להעלות תמונה משלכם. אפשר לבחור כמה תמונות בבת אחת.' : filled < n ? `חסרות עוד ${n - filled} תמונות. לחצו על משבצת ריקה בקיר.` : 'כל התמונות במקום. לחיצה על תמונה בקיר מחליפה אותה.'}</p></div>
     <div class="field"><h2>חומר</h2><div class="chips"><button class="chip" data-act="wprem" data-v="0" aria-pressed="${!w.premium}">קנבס</button><button class="chip" data-act="wprem" data-v="1" aria-pressed="${w.premium}">קנבס פרימיום <small>הערכה</small></button></div></div>
     <div class="field"><h2>גימור לכל הסט</h2><div class="chips">${[['none', 'ללא מסגרת'], ['frame', 'מסגרת'], ['float', 'מסגרת צפה']].map(([k, t]) => `<button class="chip" data-act="wframe" data-v="${k}" aria-pressed="${w.frame === k}">${t}</button>`).join('')}</div>
       ${w.frame !== 'none' ? `<div class="swatches">${(w.frame === 'float' ? FLOAT_COLORS : Object.keys(FRAME_COLORS)).map(c => `<button class="sw" data-act="wcolor" data-v="${c}" aria-pressed="${w.color === c}" aria-label="${FRAME_COLORS[c][0]}"><i style="background:${FRAME_COLORS[c][1]}"></i></button>`).join('')}</div>` : ''}</div>
@@ -619,15 +620,18 @@ $('#files').addEventListener('change', async e => {
   const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
   const w = state.wall, n = C.walls.find(x => x.id === w.id).variants[w.vi].slots.length;
   const loaded = (await Promise.allSettled(files.map(loadFile))).filter(r => r.status === 'fulfilled').map(r => r.value);
-  if (w.target >= 0) { w.photos[w.target] = loaded[0]; w.target = -1; }
-  else { let i = 0; for (const p of loaded) { while (w.photos[i] && i < n) i++; if (i >= n) break; w.photos[i++] = p; } }
+  const start = Math.max(0, w.target); w.target = -1;
+  if (!loaded.length) return;
+  w.photos[start] = loaded[0];
+  const order = Array.from({ length: n - 1 }, (_, k) => (start + 1 + k) % n).filter(i => !w.photos[i]);
+  loaded.slice(1).forEach((p, k) => { if (k < order.length) w.photos[order[k]] = p; });
   refresh();
 });
 
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
   const slot = e.target.closest('[data-slot]');
-  if (slot) { state.wall.target = +slot.dataset.slot; $('#files').removeAttribute('multiple'); $('#files').click(); $('#files').setAttribute('multiple', ''); return; }
+  if (slot) { state.wall.target = +slot.dataset.slot; $('#files').click(); return; }
   const el = e.target.closest('[data-act]'); if (!el) return;
   const v = el.dataset.v, act = el.dataset.act;
   switch (act) {
@@ -649,7 +653,6 @@ document.addEventListener('click', e => {
       refresh(); state.sheet = 'cart'; renderSheet(); return;
     }
     case 'wvar': state.wall.vi = +v; break;
-    case 'wupload': state.wall.target = -1; $('#files').click(); return;
     case 'wprem': state.wall.premium = v === '1'; break;
     case 'wframe': state.wall.frame = v; if (v === 'float' && !FLOAT_COLORS.includes(state.wall.color)) state.wall.color = 'black'; break;
     case 'wcolor': state.wall.color = v; break;

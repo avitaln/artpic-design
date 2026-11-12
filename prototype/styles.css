@@ -246,3 +246,4 @@ html, body { overflow-x:clip; }
 .opt span { font-size:12px; color:var(--muted); min-height:1em; }
 .opt:focus-visible { outline:3px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset:2px; }
 @media (min-width:900px){ .opt { flex-basis:88px; } }
+.slot, .slot-empty { cursor:pointer; }
