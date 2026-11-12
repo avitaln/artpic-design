@@ -273,7 +273,7 @@ function viewHome() {
     <div class="wrap hero-copy"><div class="hero-text">
       <h1>התמונות שלכם, בגודל אמיתי, על הקיר שלכם.</h1>
       <p class="lead">מעלים תמונה, רואים אותה בסלון בקנה מידה אמיתי, ובוחרים חומר וגודל במסך אחד.</p>
-      <div class="ctas">${uploadBtn()}<a class="btn btn-secondary" href="#studio">איך זה נראה? נסו עם תמונה לדוגמה</a></div>
+      <div class="ctas">${uploadBtn()}</div>
       <div class="reassure"><span>בדיקת איכות לכל תמונה</span><span>משלוח חינם מעל ${C.freeShippingFrom} ₪</span><span>${C.promo}</span></div>
     </div></div>
   </section>
