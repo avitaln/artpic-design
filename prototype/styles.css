@@ -247,3 +247,31 @@ html, body { overflow-x:clip; }
 .opt:focus-visible { outline:3px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset:2px; }
 @media (min-width:900px){ .opt { flex-basis:88px; } }
 .slot, .slot-empty { cursor:pointer; }
+
+/* product page life: strip, trust line, motion */
+.trust-line { font-size:14px; color:var(--muted); margin-top:6px; }
+.strip { gap:8px; }
+.strip-tile { flex:0 0 112px; padding:0; border:1px solid var(--border); border-radius:var(--r-btn); background:var(--surface); cursor:pointer; overflow:hidden; display:grid; text-align:start; }
+.strip-tile .ph { display:block; aspect-ratio:1; background:var(--wall); overflow:hidden; }
+.strip-tile .ph img, .strip-tile .ph svg { width:100%; height:100%; object-fit:cover; }
+.strip-tile .cap { font-size:13px; padding:5px 8px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.strip-tile.flash { border-color:var(--primary); box-shadow:0 0 0 1px var(--primary); }
+.lightbox { position:fixed; z-index:60; inset:0; padding:max(56px, env(safe-area-inset-top)) 16px 24px; background:rgb(0 0 0 / .86); display:grid; place-items:center; align-content:center; gap:10px; cursor:zoom-out; }
+.lightbox > img, .lightbox > svg { max-width:min(100%, 900px); max-height:78vh; width:auto; height:auto; background:var(--wall); pointer-events:auto; }
+.lightbox > svg { width:min(100%, 900px); }
+.lightbox p { color:#fff; font-weight:500; }
+.lb-close { position:absolute; top:max(8px, env(safe-area-inset-top)); inset-inline-end:8px; background:#fff; color:#111; pointer-events:auto; }
+.progress { height:4px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-bottom:10px; }
+.progress i { display:block; height:100%; background:var(--text); transition:width .4s ease; }
+.progress.done i { background:var(--success); }
+.ready { display:flex; align-items:center; gap:6px; color:var(--success); font-weight:600; margin-bottom:6px; }
+.stage svg { max-height:52vh; }
+@media (prefers-reduced-motion: no-preference) {
+  .sweep { transform-box:fill-box; animation:sweep 1s ease-out 1 both; }
+  @keyframes sweep { from { transform:translateX(-110%); } to { transform:translateX(110%); } }
+  .fin { animation:fin .45s ease-out both; }
+  @keyframes fin { from { opacity:0; } to { opacity:1; } }
+  .pop { transform-box:fill-box; transform-origin:center; animation:pop .45s cubic-bezier(.2,.9,.3,1.3) both; }
+  @keyframes pop { from { transform:scale(.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .flip { transform-origin:0 0; }
+}

@@ -151,6 +151,7 @@ const SCENES = {
 const defs = () => `<defs>
   <filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.3" flood-color="#000" flood-opacity=".28"/></filter>
   <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <linearGradient id="band" x1="0" y1="0" x2="1" y2=".3"><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset=".65" stop-color="#fff" stop-opacity="0"/></linearGradient>
   <pattern id="tex" width="1.4" height="1.4" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 .7h1.4" stroke="#000" stroke-opacity=".12" stroke-width=".35"/></pattern>
 </defs>`;
 
@@ -162,15 +163,16 @@ function printSVG(p) {
     <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--surface)" fill-opacity=".75" stroke="var(--text)" stroke-width=".5" stroke-dasharray="2 1.5"/>
     <path d="M${cx - m * .12} ${cy - m * .06}h${m * .24}M${cx} ${cy - m * .18}v${m * .24}" stroke="var(--text)" stroke-width="${Math.max(.5, m * .025)}" stroke-linecap="round"/>
     <text x="${cx}" y="${cy + m * .26}" text-anchor="middle" font-size="${Math.max(3.6, m * .17)}" fill="var(--muted)" font-family="var(--font-body)">${D(w, h)}</text></g>`; }
+  const uid = 'c' + Math.random().toString(36).slice(2, 8);
   const img = `<image href="${p.photo.url}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${p.align || 'xMidYMid'} slice"/>`;
   let out = '';
   const f = p.frame || { type: 'none' };
   if ((p.mat === 'canvas' || p.mat === 'pcanvas' || p.mat === 'perspex') && f.type === 'frame') {
     const t = p.mat === 'perspex' ? Math.max(1.2, Math.min(w, h) * .025) : Math.max(2.2, Math.min(w, h) * .045);
-    out += `<rect x="${x - t}" y="${y - t}" width="${w + 2 * t}" height="${h + 2 * t}" fill="${FRAME_COLORS[f.color][1]}" filter="url(#sh)"/>`;
+    out += `<rect class="${p.anim === 'opt' ? 'fin' : ''}" x="${x - t}" y="${y - t}" width="${w + 2 * t}" height="${h + 2 * t}" fill="${FRAME_COLORS[f.color][1]}" filter="url(#sh)"/>`;
   } else if ((p.mat === 'canvas' || p.mat === 'pcanvas') && f.type === 'float') {
     const g = 1.2, t = 1.6;
-    out += `<rect x="${x - g - t}" y="${y - g - t}" width="${w + 2 * (g + t)}" height="${h + 2 * (g + t)}" fill="${FRAME_COLORS[f.color][1]}" filter="url(#sh)"/><rect x="${x - g}" y="${y - g}" width="${w + 2 * g}" height="${h + 2 * g}" fill="#1a1a1a"/>`;
+    out += `<rect class="${p.anim === 'opt' ? 'fin' : ''}" x="${x - g - t}" y="${y - g - t}" width="${w + 2 * (g + t)}" height="${h + 2 * (g + t)}" fill="${FRAME_COLORS[f.color][1]}" filter="url(#sh)"/><rect x="${x - g}" y="${y - g}" width="${w + 2 * g}" height="${h + 2 * g}" fill="#1a1a1a"/>`;
   } else {
     out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#ddd" filter="url(#sh)"/>`;
   }
@@ -179,6 +181,7 @@ function printSVG(p) {
   if (p.mat === 'canvas' || p.mat === 'pcanvas') out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#000" stroke-opacity=".12" stroke-width=".3"/>`;
   if (p.mat === 'glass' || p.mat === 'perspex' || p.mat === 'story') {
     out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#gloss)"/>`;
+    if (p.anim === 'mat') out += `<clipPath id="${uid}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath><g clip-path="url(#${uid})"><rect class="sweep" x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#band)"/></g>`;
     out += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#e8f3f1" stroke-opacity=".9" stroke-width="${p.mat === 'glass' ? .5 : .3}"/>`;
   }
   if ((p.mat === 'glass' || p.mat === 'perspex') && p.spacer) {
@@ -191,6 +194,7 @@ function printSVG(p) {
   }
   if (p.badge) { const r = Math.max(2.2, Math.min(w, h) * .13), cx = x + w / 2, cy = y + h / 2;
     out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" fill-opacity=".92" stroke="var(--ink)" stroke-opacity=".25" stroke-width=".3"/><path d="M${cx - r * .45} ${cy}h${r * .9}M${cx} ${cy - r * .45}v${r * .9}" stroke="var(--ink)" stroke-width="${r * .14}" stroke-linecap="round"/>`; }
+  if (p.pop) out = `<g class="pop">${out}</g>`;
   return p.slot != null ? `<g class="slot" data-slot="${p.slot}" role="button" aria-label="העלאת תמונה למשבצת ${p.slot + 1}">${out}</g>` : `<g>${out}</g>`;
 }
 
@@ -263,6 +267,54 @@ function roomSVG(sceneId, items, opts = {}) {
     ${dim}
     <text x="${cx}" y="${H - 3.5 * k}" text-anchor="middle" font-size="${6.5 * k}" fill="var(--ink)" opacity=".75" font-family="var(--font-body)">${S.ref}</text>
   </svg>`;
+}
+
+/* Real room photos (Gemini), calibrated so prints are drawn to true scale.
+   ppc = image pixels per cm on the wall plane, cx = centre of the furniture,
+   base = y where a print's bottom edge sits (or the surface a block stands on), cy = vertical centre (stairs). */
+const ROOMS = {
+  sofa:    { img: 'img/room/sofa.jpg',    W: 1600, H: 1195, ppc: 4.17, cx: 803, base: 616, ref: 'ספה · 210 ס״מ' },
+  bed:     { img: 'img/room/bed.jpg',     W: 1600, H: 1195, ppc: 2.55, cx: 813, base: 557, ref: 'מיטה זוגית · 160 ס״מ' },
+  kitchen: { img: 'img/room/kitchen.jpg', W: 1600, H: 1195, ppc: 5.2,  cx: 792, base: 560, ref: 'שולחן · 160 ס״מ' },
+  desk:    { img: 'img/room/desk.jpg',    W: 1600, H: 1195, ppc: 6.2,  cx: 880, base: 811, standing: true, ref: 'שידה · 120 ס״מ' },
+  stairs:  { img: 'img/room/stairs.jpg',  W: 1600, H: 1195, ppc: 4.1,  cx: 640, cy: 440, mirror: true, ref: 'גרם מדרגות' },
+};
+let lastPrintRect = null;   // for the grow/shrink animation between sizes
+function roomPhotoSVG(sceneId, items, opts = {}) {
+  const R = ROOMS[sceneId]; if (!R) return null;
+  const minX = Math.min(...items.map(i => i.x)), minY = Math.min(...items.map(i => i.y));
+  const gw = Math.max(...items.map(i => i.x + i.w)) - minX, gh = Math.max(...items.map(i => i.y + i.h)) - minY;
+  const pw = gw * R.ppc, ph = gh * R.ppc;
+  const gx = R.cx - pw / 2, gy = R.cy != null ? R.cy - ph / 2 : R.base - ph;
+  if (gy < R.H * .04 || gx < R.W * .03 || gx + pw > R.W * .97) return null;     // too big for this photo: use the drawing
+  const fs = R.W / 42, dy = gy - fs * .9;
+  // mirror = the photo's stairs rise the other way, so flip the layout to follow them
+  const prints = items.map(i => printSVG({ ...i, x: R.mirror ? gw - (i.x - minX) - i.w : i.x - minX, y: i.y - minY })).join('');
+  const label = opts.label ?? `${D(Math.round(gw), Math.round(gh))} ס״מ`;
+  const rect = { scene: sceneId, x: gx, y: gy, w: pw, h: ph };
+  return { rect, svg: `<svg viewBox="0 0 ${R.W} ${R.H}" role="img" aria-label="${esc(label)}" xmlns="http://www.w3.org/2000/svg">${defs()}
+    <image href="${R.img}" width="${R.W}" height="${R.H}"/>
+    <g class="flip" id="flipg"><g transform="translate(${gx.toFixed(1)} ${gy.toFixed(1)}) scale(${R.ppc})">${prints}</g></g>
+    ${opts.noDim ? '' : `<g class="dim"><path d="M${gx} ${dy} H${gx + pw} M${gx} ${dy - fs * .3} v${fs * .6} M${gx + pw} ${dy - fs * .3} v${fs * .6}" stroke="#111" stroke-width="${fs * .07}" opacity=".7"/>
+    <text x="${R.cx}" y="${dy - fs * .45}" text-anchor="middle" font-size="${fs}" font-weight="600" fill="#111" font-family="var(--font-body)" paint-order="stroke" stroke="#fff" stroke-width="${fs * .25}" stroke-opacity=".7">${label}</text></g>`}
+    <text x="${R.W - fs * .6}" y="${R.H - fs * .6}" text-anchor="start" font-size="${fs * .62}" fill="#111" opacity=".6" font-family="var(--font-body)" paint-order="stroke" stroke="#fff" stroke-width="${fs * .2}">${R.ref}</text>
+  </svg>` };
+}
+// Grow/shrink the print from its previous size (FLIP). Only between two photo renders of the same room.
+function animateFlip(rect, on) {
+  const g = document.getElementById('flipg'), prev = lastPrintRect; lastPrintRect = rect;
+  if (!on || !g || !rect || !prev || prev.scene !== rect.scene || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const sx = prev.w / rect.w, sy = prev.h / rect.h, tx = prev.x - sx * rect.x, ty = prev.y - sy * rect.y;
+  if (Math.abs(sx - 1) < .01 && Math.abs(sy - 1) < .01 && Math.abs(tx) < 1 && Math.abs(ty) < 1) return;
+  g.style.transition = 'none'; g.style.transform = `matrix(${sx},0,0,${sy},${tx},${ty})`;
+  g.getBoundingClientRect();
+  requestAnimationFrame(() => { g.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; g.style.transform = 'none'; });
+}
+function sceneHTML(sceneId, items, opts) {
+  const photo = roomPhotoSVG(sceneId, items, opts);
+  if (photo) return photo;
+  lastPrintRect = null;
+  return { rect: null, svg: roomSVG(sceneId, items, opts) };
 }
 
 function closeupSVG(p) {
@@ -409,11 +461,13 @@ function updateStudio(scrollSel) {
   try { history.replaceState(null, '', `#p-${m.id}-${s.key}`); } catch {}
   $('#crumbs').innerHTML = `<a href="#home">ראשי</a> › <a href="#m-${m.id}">${m.name}</a> › <span class="num">${D(s.w, s.h)}</span>`;
 
-  const item = { x: 0, y: 0, w: dw, h: dh, mat: m.id, photo: ph, ...(curOpt()?.draw || {}) };
+  const anim = state.anim; state.anim = null;
+  const item = { x: 0, y: 0, w: dw, h: dh, mat: m.id, photo: ph, anim, ...(curOpt()?.draw || {}) };
   const scenes = m.standing ? ['desk'] : ['sofa', 'bed', 'kitchen'];
-  $('#stage').innerHTML = (state.view === 'wall' ? roomSVG(state.scene, [item], { label: `${D(dw, dh)} ס״מ` }) : closeupSVG(item)) +
-    `<div class="stage-tools"><div class="seg" role="group" aria-label="חדר">${scenes.map(sc => `<button data-act="scene" data-v="${sc}" aria-pressed="${state.view === 'wall' && state.scene === sc}">${SCENES[sc].label}</button>`).join('')}</div>
-     <div class="seg"><button data-act="view" aria-pressed="${state.view === 'close'}">תקריב</button></div></div>`;
+  const sc = sceneHTML(state.scene, [item], { label: `${D(dw, dh)} ס״מ` });
+  $('#stage').innerHTML = sc.svg +
+    `<div class="stage-tools"><div class="seg" role="group" aria-label="חדר">${scenes.map(x => `<button data-act="scene" data-v="${x}" aria-pressed="${state.scene === x}">${SCENES[x].label}</button>`).join('')}</div></div>`;
+  animateFlip(sc.rect, anim === 'size' || anim === 'mat');
 
   const scrolls = {}; document.querySelectorAll('[data-rail]').forEach(r => { scrolls[r.dataset.rail] = r.scrollLeft; });
   const q = quality(ph, dw, dh);
@@ -422,7 +476,9 @@ function updateStudio(scrollSel) {
   const maxA = Math.max(...sizes.map(z => Math.max(z.w, z.h)));
   $('#panel').innerHTML = `
     <div class="prod-head"><h1>${title}</h1>
-      <div class="price-line num"><span class="now">${money(pr.sale)}</span><s>${money(pr.list)}</s><span class="off">${pr.off}% הנחה</span><span class="promo-note">${C.promo}</span></div></div>
+      <div class="price-line num"><span class="now">${money(pr.sale)}</span><s>${money(pr.list)}</s><span class="off">${pr.off}% הנחה</span><span class="promo-note">${C.promo}</span></div>
+      <p class="trust-line">משלוח חינם מעל ${C.freeShippingFrom} ₪ · נשלח תוך [X] ימי עסקים · [★4.9 · X ביקורות בגוגל]</p></div>
+    ${stripHTML(m, item)}
 
     <div class="photo-row"><img src="${ph.url}" alt=""><div class="meta"><b>${esc(ph.name)}</b><span class="q ${q.k}">${ph.sample ? 'העלו תמונה כדי לבדוק איכות' : `${q.t} ב־${D(dw, dh)}`}</span></div>
       ${uploadBtn(ph.sample ? 'העלאה' : 'החלפה', ph.sample ? 'btn btn-primary' : 'btn btn-secondary')}</div>
@@ -450,9 +506,24 @@ function updateStudio(scrollSel) {
     </div>`;
   document.querySelectorAll('[data-rail]').forEach(r => { r.scrollLeft = scrolls[r.dataset.rail] || 0; });
   if (scrollSel) document.querySelectorAll('[data-rail] [aria-pressed="true"]').forEach(el => el.scrollIntoView({ inline: 'center', block: 'nearest' }));
+  if (state.flash) { $('.strip-tile.flash')?.scrollIntoView({ inline: 'center', block: 'nearest' }); state.flash = null; }
 
   $('#buybar').innerHTML = `<div class="wrap"><div class="p num"><b>${money(pr.sale)}</b><s>${money(pr.list)}</s><small>${m.name} ${D(dw, dh)}${finishLabel() ? ' · ' + finishLabel() : ''}</small></div>
     <button class="btn btn-primary" data-act="add">הוספה לסל</button></div>`;
+}
+
+/* Photo strip: close-up of this print, the material, the chosen finish, how it arrives. */
+function stripHTML(m, item) {
+  const o = curOpt();
+  const tiles = [
+    { k: 'close', label: 'מקרוב', svg: closeupSVG(item) },
+    { k: 'mat', label: m.name, src: `img/mat-${m.id}.jpg` },
+    ...(o && o.img ? [{ k: 'opt', label: o.short, full: o.label, src: o.img }] : []),
+    { k: 'pack', label: 'כך זה מגיע', src: 'img/pack.jpg' },
+  ];
+  state.stripTiles = tiles;
+  return `<div class="rail strip" data-rail="strip">${tiles.map((t, i) => `<button class="strip-tile ${t.k === state.flash ? 'flash' : ''}" data-act="lightbox" data-v="${i}" aria-label="${esc(t.label)}, הגדלה">
+    <span class="ph">${t.svg || `<img src="${t.src}" alt="" loading="lazy" width="240" height="240">`}</span><span class="cap">${esc(t.label)}</span></button>`).join('')}</div>`;
 }
 
 function finishHTML(m, s) {
@@ -508,19 +579,22 @@ function updateWall() {
   const usingSamples = w.photos.filter(Boolean).length === 0;
   const items = v.slots.map((s, i) => {
     const p = w.photos[i];
-    if (p) return { ...s, slot: i, mat: w.premium ? 'pcanvas' : 'canvas', photo: p, frame: { type: w.frame, color: w.color } };
+    if (p) return { ...s, slot: i, pop: (w.justFilled || []).includes(i), mat: w.premium ? 'pcanvas' : 'canvas', photo: p, frame: { type: w.frame, color: w.color } };
     return { ...s, empty: true, idx: i };
   });
   const pr = wallPrice(L, v);
   const title = `קיר תמונות ${w.premium ? 'קנבס פרימיום' : 'קנבס'} ${L.name}${v.key ? ' ' + v.key : ''}`;
   document.title = `${title} | ArtPic`;
   $('#crumbs').innerHTML = `<a href="#home">ראשי</a> › <a href="#walls">קיר תמונות</a> › ${L.name}`;
-  $('#stage').innerHTML = roomSVG(L.scene, items, { label: `רוחב כולל ${Math.round(Math.max(...v.slots.map(s => s.x + s.w)))} ס״מ` });
+  const wsc = sceneHTML(L.scene, items, { label: `רוחב כולל ${Math.round(Math.max(...v.slots.map(s => s.x + s.w)))} ס״מ` });
+  $('#stage').innerHTML = wsc.svg; lastPrintRect = null; w.justFilled = [];
   $('#panel').innerHTML = `
     <div class="prod-head"><h1>${title}</h1><div class="price-line num"><span class="now">${money(pr.sale)}</span><s>${money(pr.list)}</s><span class="off">${pr.off}% הנחה</span></div>
       <p class="hint">${L.pitch}</p></div>
     ${L.variants.length > 1 ? `<div class="field"><h2>גודל הסט</h2><div class="chips">${L.variants.map((x, i) => `<button class="chip" data-act="wvar" data-v="${i}" aria-pressed="${i === w.vi}">${x.key} <small class="num">${money(x.price[0])}</small></button>`).join('')}</div></div>` : ''}
     <div class="field"><h2>תמונות <span class="num">${filled} מתוך ${n}</span></h2>
+      <div class="progress ${filled === n ? 'done' : ''}"><i style="width:${filled / n * 100}%"></i></div>
+      ${filled === n ? `<p class="ready"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>הקיר שלכם מוכן</p>` : ''}
       <p class="hint" style="margin:0">${usingSamples ? 'לחצו על + בקיר כדי להעלות תמונה. אפשר לבחור כמה תמונות בבת אחת.' : filled < n ? `חסרות עוד ${n - filled} תמונות. לחצו על + בקיר.` : 'כל התמונות במקום. לחיצה על תמונה בקיר מחליפה אותה.'}</p></div>
     <div class="field"><h2>חומר</h2><div class="chips"><button class="chip" data-act="wprem" data-v="0" aria-pressed="${!w.premium}">קנבס</button><button class="chip" data-act="wprem" data-v="1" aria-pressed="${w.premium}">קנבס פרימיום <small>הערכה</small></button></div></div>
     <div class="field"><h2>גימור לכל הסט</h2><div class="chips">${[['none', 'ללא מסגרת'], ['frame', 'מסגרת'], ['float', 'מסגרת צפה']].map(([k, t]) => `<button class="chip" data-act="wframe" data-v="${k}" aria-pressed="${w.frame === k}">${t}</button>`).join('')}</div>
@@ -536,6 +610,13 @@ let _sample; const makeSampleCached = () => _sample || (_sample = makeSample());
 function renderSheet() {
   const root = $('#sheet');
   if (!state.sheet) { root.innerHTML = ''; return; }
+  if (state.sheet === 'lightbox' && state.lightbox) {
+    const t = state.lightbox;
+    root.innerHTML = `<div class="sheet-backdrop" data-act="close"></div><div class="lightbox" data-act="close" role="dialog" aria-label="${esc(t.label)}">
+      <button class="icon-btn lb-close" data-act="close" aria-label="סגירה"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      ${t.svg || `<img src="${t.src.replace('img/opt/', 'img/opt/')}" alt="${esc(t.full || t.label)}">`}<p>${esc(t.full || t.label)}${t.k === 'pack' ? ' · [להחליף בצילום אריזה אמיתי]' : ''}</p></div>`;
+    return;
+  }
   if (state.sheet === 'menu') {
     root.innerHTML = `<div class="sheet-backdrop" data-act="close"></div><div class="sheet menu-sheet" role="dialog" aria-label="תפריט"><div class="grab"></div>
       <a href="#home">ראשי</a>${C.materials.map(m => `<a href="#m-${m.id}">הדפסה על ${m.name}</a>`).join('')}<a href="#walls">קיר תמונות קנבס</a>
@@ -624,9 +705,10 @@ $('#files').addEventListener('change', async e => {
   const loaded = (await Promise.allSettled(files.map(loadFile))).filter(r => r.status === 'fulfilled').map(r => r.value);
   const start = Math.max(0, w.target); w.target = -1;
   if (!loaded.length) return;
+  w.justFilled = [start];
   w.photos[start] = loaded[0];
   const order = Array.from({ length: n - 1 }, (_, k) => (start + 1 + k) % n).filter(i => !w.photos[i]);
-  loaded.slice(1).forEach((p, k) => { if (k < order.length) w.photos[order[k]] = p; });
+  loaded.slice(1).forEach((p, k) => { if (k < order.length) { w.photos[order[k]] = p; w.justFilled.push(order[k]); } });
   refresh();
 });
 
@@ -642,13 +724,13 @@ document.addEventListener('click', e => {
     case 'cart': state.sheet = 'cart'; renderSheet(); return;
     case 'close': state.sheet = null; renderSheet(); return;
     case 'remove': state.cart.splice(+v, 1); refresh(); state.sheet = 'cart'; renderSheet(); return;
-    case 'scene': state.scene = v; state.view = 'wall'; break;
-    case 'view': state.view = state.view === 'close' ? 'wall' : 'close'; break;
-    case 'mat': selectMaterial(v); refresh(true); return;
-    case 'shape': selectShape(v); refresh(true); return;
-    case 'orient': state.orient = v; break;
-    case 'size': state.sizeKey = v; break;
-    case 'opt': state.opt[optKey(curMat())] = v; break;
+    case 'scene': state.scene = v; break;
+    case 'lightbox': state.sheet = 'lightbox'; state.lightbox = state.stripTiles[+v]; renderSheet(); return;
+    case 'mat': selectMaterial(v); state.anim = 'mat'; state.flash = 'mat'; refresh(true); return;
+    case 'shape': selectShape(v); state.anim = 'size'; refresh(true); return;
+    case 'orient': state.orient = v; state.anim = 'size'; break;
+    case 'size': state.sizeKey = v; state.anim = 'size'; break;
+    case 'opt': state.opt[optKey(curMat())] = v; state.anim = 'opt'; state.flash = 'opt'; break;
     case 'add': {
       const m = curMat(), s = curSize(), [a, b] = dims(s), pr = priceNow();
       state.cart.push({ title: `${m.name} ${D(a, b)}`, finish: finishLabel(), price: Math.round(pr.sale * 100) / 100, thumb: photo().url, slug: s.slug });
